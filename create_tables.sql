@@ -35,14 +35,14 @@ CREATE TABLE IF NOT EXISTS aircraft (
 -- tabela merytoryczna przyloty
 CREATE TABLE IF NOT EXISTS arrivals (
     arrival_id SERIAL PRIMARY KEY,
-    log_id INT,
-    icao24 VARCHAR(6),
+    log_id INT NOT NULL,
+    icao24 VARCHAR(6) NOT NULL,
     departure_airport VARCHAR(4),
     arrival_airport VARCHAR(4),
     callsign VARCHAR(20),
-    departure_time TIMESTAMP,
-    arrival_time TIMESTAMP,
-    flight_duration_sec INT,
+    departure_time TIMESTAMP NOT NULL,
+    arrival_time TIMESTAMP NOT NULL,
+    flight_duration_min NUMERIC(6, 2) NOT NULL,
 
     CONSTRAINT fk_arrivals_log
         FOREIGN KEY (log_id)
