@@ -51,8 +51,8 @@ class TokenManager:
 tokens = TokenManager()
 
 # Use it for any API call - the token is refreshed automatically.
-response = requests.get(
-    "https://opensky-network.org/api/states/all",
-    headers=tokens.headers(),
-)
-print(response.json())
+# response = requests.get(
+#     "https://opensky-network.org/api/states/all",
+#     headers=tokens.headers(),
+#)
+#print(response.json())
