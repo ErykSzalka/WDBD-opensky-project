@@ -58,8 +58,9 @@ CREATE TABLE IF NOT EXISTS arrivals (
 
     CONSTRAINT fk_arrivals_arr_airport 
         FOREIGN KEY (arrival_airport) 
-        REFERENCES airports(icao_code)
-
+        REFERENCES airports(icao_code),
+    CONSTRAINT unique_arrival
+        UNIQUE (icao24, departure_time, arrival_time, arrival_airport)
 );
 
 -- tabela merytoryczna statystyki lotnisk (dzienne)
@@ -72,5 +73,8 @@ CREATE TABLE IF NOT EXISTS daily_airport_stats (
 
     CONSTRAINT fk_stats_airport
         FOREIGN KEY (icao_code)
-        REFERENCES airports(icao_code)
+        REFERENCES airports(icao_code),
+
+    CONSTRAINT unique_daily_airport_stat
+        UNIQUE (icao_code, stat_date)
 );
