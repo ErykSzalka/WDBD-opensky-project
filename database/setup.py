@@ -10,7 +10,7 @@ load_dotenv()
 
 
 database_name = os.getenv("DB_NAME")
-sql_file = Path(__file__).parent/"sql"/"create_tables.sql"
+sql_file = Path(__file__).resolve().parent.parent / "sql" / "create_tables.sql"
 
 
 def create_database():
