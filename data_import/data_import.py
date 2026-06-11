@@ -11,8 +11,8 @@ import pandas as pd
 import requests
 import time
 
-from token_manager import tokens
-from data_organizer import Arrival
+from data_import.token_manager import tokens
+from data_import.data_organizer import Arrival
 
 def fetch_opensky_data() -> tuple[list[dict], list]:
     url = "https://opensky-network.org/api/flights/arrival"
