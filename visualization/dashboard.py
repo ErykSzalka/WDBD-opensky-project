@@ -59,6 +59,9 @@ with tab1:
     df_time = arrivals_over_time(conn, period)
     df_hour = arrivals_by_hour(conn)
     df_airports = arrivals_by_airport(conn)
+    if df_airports.empty:
+        st.warning("Brak danych o przylotach w bazie.")
+        st.stop()
 
     col1, col2, col3 = st.columns(3)
 
@@ -77,7 +80,7 @@ with tab1:
         title="Liczba przylotów w czasie",
         markers=True
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     st.subheader("Rozkład przylotów według godziny")
     fig = px.bar(
@@ -86,7 +89,7 @@ with tab1:
         y="flight_count",
         title="Liczba przylotów według godziny"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 with tab2:
@@ -103,9 +106,9 @@ with tab2:
         hover_data=["airport_name"],
         title="Najbardziej aktywne lotniska"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
-    st.dataframe(df_airports, use_container_width=True)
+    st.dataframe(df_airports, width='stretch')
 
     st.subheader("Średni czas lotu dla lotnisk")
 
@@ -118,7 +121,7 @@ with tab2:
         hover_data=["total_flights"],
         title="Średni czas lotu według lotniska"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     st.subheader("Statystyki dzienne wybranego lotniska")
 
@@ -137,7 +140,7 @@ with tab2:
             title=f"Dzienna liczba przylotów dla {selected_airport}",
             markers=True
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
         fig = px.line(
             df_daily,
@@ -146,9 +149,9 @@ with tab2:
             title=f"Średni czas lotu dla {selected_airport}",
             markers=True
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
-        st.dataframe(df_daily, use_container_width=True)
+        st.dataframe(df_daily, width='stretch')
     else:
         st.info("Brak danych dla wybranego lotniska.")
 
@@ -166,9 +169,9 @@ with tab3:
         orientation="h",
         title="Najpopularniejsze trasy"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
-    st.dataframe(df_routes, use_container_width=True)
+    st.dataframe(df_routes, width='stretch')
 
 
 with tab4:
@@ -185,9 +188,9 @@ with tab4:
             y="flight_count",
             title="Najbardziej aktywne linie lotnicze"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
-        st.dataframe(df_airlines, use_container_width=True)
+        st.dataframe(df_airlines, width='stretch')
     else:
         st.info("Brak linii spełniających warunek.")
 
@@ -202,9 +205,9 @@ with tab4:
         hover_data=["airline_name"],
         title="Najaktywniejsze samoloty"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
-    st.dataframe(df_aircraft, use_container_width=True)
+    st.dataframe(df_aircraft, width='stretch')
 
 
 with tab5:
@@ -222,9 +225,9 @@ with tab5:
         nbins=30,
         title="Rozkład czasu trwania lotów"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
-    st.dataframe(df_duration, use_container_width=True)
+    st.dataframe(df_duration, width='stretch')
 
     st.subheader("Ruch lotniczy według kraju")
 
@@ -241,9 +244,9 @@ with tab5:
                 hover_data=["airport_name", "city"],
                 title=f"Ruch lotniczy w kraju: {country}"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
-            st.dataframe(df_country, use_container_width=True)
+            st.dataframe(df_country, width='stretch')
         else:
             st.info("Brak danych dla tego kraju.")
 
@@ -266,6 +269,6 @@ with tab5:
             hover_data=["airport_name", "avg_duration_min"],
             title="Porównanie lotnisk"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
-        st.dataframe(df_compare, use_container_width=True)
+        st.dataframe(df_compare, width='stretch')

@@ -33,6 +33,7 @@ class TokenManager:
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
             },
+    timeout=(5, 30),
         )
         r.raise_for_status()
 

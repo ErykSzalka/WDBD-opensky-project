@@ -33,7 +33,12 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
             "end": end_time
         }
 
-        response = requests.get(url, params=params, headers=tokens.headers())
+        response = requests.get(
+            url,
+            params=params,
+            headers=tokens.headers(),
+            timeout=(5, 30),
+        )
 
         if response.status_code == 200:
             data = response.json()
@@ -44,7 +49,7 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
                     all_arrivals.append(arrival_obj)
             else:
                 import_errors.append(f"Warning: Empty data for {airport_code}")
-        if response.status_code == 401:
+        elif response.status_code == 401:
             tokens.invalidate()
             response = requests.get(
                 url,
@@ -52,7 +57,22 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
                 headers=tokens.headers(),
                 timeout=(5, 30),
             )
+            if response.status_code == 200:
+                data = response.json()
+                for raw_flight in data:
+                    arrival_obj = Arrival.from_api_dict(raw_flight)
+                    all_arrivals.append(arrival_obj)
+            else:
+                import_errors.append(
+                    f"Failed after token refresh for {airport_code}. "
+                    f"Status: {response.status_code}"
+                )
 
+
+
+
+        elif response.status_code == 404:
+            continue
         else:
             import_errors.append(f"Failed to fetch {airport_code}. Status: {response.status_code}")
     
