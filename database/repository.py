@@ -10,10 +10,13 @@ SQL_FOLDER = Path(__file__).resolve().parent.parent / "sql"
 def read_sql_file(file_name):
     return (SQL_FOLDER / file_name).read_text(encoding="utf-8")
 
-def save_arrivals_to_database(arrivals, errors=None):
+def save_arrivals_to_database(arrivals, errors=None, requested_start=None, requested_end=None):
     if not arrivals:
-        print("Brak danych do zapisania.")
-        return
+        download_status = "FAILED" if errors else "EMPTY"
+    elif errors:
+        download_status = "PARTIAL_SUCCESS"
+    else:
+        download_status = "SUCCESS"
     database_name = os.getenv("DB_NAME")
     errors = errors or []
 

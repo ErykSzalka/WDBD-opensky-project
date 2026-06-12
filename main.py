@@ -12,20 +12,20 @@ def start_streamlit():
         "-m",
         "streamlit",
         "run",
-        "vizualize/app.py"
+        "visualization/dashboard.py"
     ])
 
 
 def main():
-    #streamlit_process = start_streamlit()
-
-    #try:
-        #run_collector()
-    #finally:
-        #streamlit_process.terminate()
     create_database()
     create_tables()
-    run_collector()
+
+    streamlit_process = start_streamlit()
+    try:
+        run_collector()
+    finally:
+        streamlit_process.terminate()
+        streamlit_process.wait()
 
 
 if __name__ == "__main__":

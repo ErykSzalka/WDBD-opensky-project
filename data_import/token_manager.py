@@ -42,6 +42,10 @@ class TokenManager:
         self.expires_at = datetime.now() + timedelta(seconds=expires_in - TOKEN_REFRESH_MARGIN)
         return self.token
 
+    def invalidate(self):
+        self.token = None
+        self.expires_at = None
+
     def headers(self):
         """Return request headers with a valid Bearer token."""
         return {"Authorization": f"Bearer {self.get_token()}"}

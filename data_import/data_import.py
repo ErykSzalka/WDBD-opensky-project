@@ -44,6 +44,15 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
                     all_arrivals.append(arrival_obj)
             else:
                 import_errors.append(f"Warning: Empty data for {airport_code}")
+        if response.status_code == 401:
+            tokens.invalidate()
+            response = requests.get(
+                url,
+                params=params,
+                headers=tokens.headers(),
+                timeout=(5, 30),
+            )
+
         else:
             import_errors.append(f"Failed to fetch {airport_code}. Status: {response.status_code}")
     
