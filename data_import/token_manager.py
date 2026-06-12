@@ -33,6 +33,7 @@ class TokenManager:
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
             },
+    timeout=(5, 30),
         )
         r.raise_for_status()
 
@@ -41,6 +42,10 @@ class TokenManager:
         expires_in = data.get("expires_in", 1800)
         self.expires_at = datetime.now() + timedelta(seconds=expires_in - TOKEN_REFRESH_MARGIN)
         return self.token
+
+    def invalidate(self):
+        self.token = None
+        self.expires_at = None
 
     def headers(self):
         """Return request headers with a valid Bearer token."""

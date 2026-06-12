@@ -14,7 +14,7 @@ sql_file = Path(__file__).resolve().parent.parent / "sql" / "create_tables.sql"
 
 
 def create_database():
-    connection = connect_to_database("opensky_db")
+    connection = connect_to_database("postgres")
     connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s",(database_name,))
