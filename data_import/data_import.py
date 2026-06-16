@@ -78,6 +78,41 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
     
     return all_arrivals, import_errors
 
+def fetch_opensky_radar_data():
+    url = "https://opensky-network.org/api/states/all"
+
+    params = {
+        "lamin": 49.0,
+        "lamax": 54.9,
+        "lomin": 14.1,
+        "lomax": 24.2
+    }
+
+    response = requests.get(
+            url,
+            params=params,
+            headers=tokens.headers(),
+            timeout=(5, 30),
+        )
 
 
+    if response.status_code == 200:
+        data = response.json()
+
+
+    elif response.status_code == 401:
+            tokens.invalidate()
+            response = requests.get(
+                url,
+                params=params,
+                headers=tokens.headers(),
+                timeout=(5, 30),
+            )
+            if response.status_code == 200:
+                data = response.json()
+    
+    
+
+        
+            
 
