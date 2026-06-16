@@ -89,6 +89,7 @@ def fetch_opensky_radar_data():
 
     all_states = []
     import_errors = []
+    snapshot_time = None
 
     response = requests.get(
         url,
@@ -99,7 +100,9 @@ def fetch_opensky_radar_data():
 
     if response.status_code == 200:
         data = response.json()
+        snapshot_time = data.get("time")
         states = data.get("states")
+
         if states:
             for raw_state in states:
                 state_obj = RadarState.from_api_list(raw_state)
@@ -115,9 +118,12 @@ def fetch_opensky_radar_data():
             headers=tokens.headers(),
             timeout=(5, 30),
         )
+
         if response.status_code == 200:
             data = response.json()
+            snapshot_time = data.get("time")
             states = data.get("states")
+
             if states:
                 for raw_state in states:
                     state_obj = RadarState.from_api_list(raw_state)
@@ -126,13 +132,12 @@ def fetch_opensky_radar_data():
                 import_errors.append("Warning: Empty radar data for Poland after token refresh")
         else:
             import_errors.append(f"Failed after token refresh. Status: {response.status_code}")
-    
+
     elif response.status_code == 404:
-        pass
+        import_errors.append("Radar endpoint returned 404")
     else:
         import_errors.append(f"Failed to fetch radar data. Status: {response.status_code}")
 
-    return all_states, import_errors
-
+    return all_states, import_errors, snapshot_time
 
 
