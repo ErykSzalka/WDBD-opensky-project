@@ -6,22 +6,33 @@ from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
-
+import os
 import pandas as pd
 import requests
 import time
 
 from data_import.token_manager import tokens
 from data_import.data_organizer import Arrival, RadarState
+from database.connection import connect_to_database
 
 def fetch_opensky_data() -> tuple[list[dict], list]:
     url = "https://opensky-network.org/api/flights/arrival"
 
-    end_time = int(time.time()) - (86400 * 5) # tutaj określamy ile dni wstecz chcemy
+    end_time = int(time.time()) - (86400 * 4) # tutaj określamy ile dni wstecz chcemy
     begin_time = end_time - 86400
     #obecnie przedział czasu to jeden dzień
-    polish_airports = ["EPWA", "EPKK", "EPGD", "EPKT", "EPWR"]
-    # Warszawa(Chopin), Kraków(Balice), Gdańsk(Rębiechowo), Katowice (Pyrzowice), Wrocław (Strachowice)
+    connection = connect_to_database(os.getenv("DB_NAME"))
+    cursor = connection.cursor()
+    
+    try:
+        cursor.execute("SELECT icao_code FROM airports WHERE country = 'Poland'")
+        polish_airports = [row[0] for row in cursor.fetchall()]
+    except Exception as error:
+        print("Błąd pobierania lotnisk z bazy:", error)
+        polish_airports = [] 
+    finally:
+        cursor.close()
+        connection.close()
     
     all_arrivals = []
     import_errors = []
@@ -49,6 +60,7 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
                     all_arrivals.append(arrival_obj)
             else:
                 import_errors.append(f"Warning: Empty data for {airport_code}")
+            time.sleep(2)
         elif response.status_code == 401:
             tokens.invalidate()
             response = requests.get(

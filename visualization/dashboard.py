@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from database.connection import connect_to_database
 
-from reader import (
+from visualization.reader import (
     flights_by_min_duration,
     airport_traffic_by_country,
     airlines_flights_above_count,
@@ -17,7 +17,9 @@ from reader import (
     avg_flight_duration_all_airports,
     arrivals_over_time,
     arrivals_by_hour,
-    compare_specific_airports
+    compare_specific_airports,
+    get_all_cities,
+    airport_traffic_by_multiple_cities
 )
 
 load_dotenv()
@@ -158,21 +160,39 @@ with tab4:
 with tab5:
     st.header("Filtrowanie danych")
 
-    st.subheader("Ruch lotniczy według kraju")
-    
-    country = st.text_input("Podaj kraj", "Poland")
+    st.subheader("Ruch lotniczy według miast")
 
-    if country:
-        df_country = airport_traffic_by_country(country, conn)
-        if df_country is not None and not df_country.empty:
+    available_cities = get_all_cities(conn)
+
+    default_city = ["Warsaw"] if "Warsaw" in available_cities else []
+    
+    selected_cities = st.multiselect(
+        "Wybierz jedno lub więcej miast",
+        available_cities,
+        default=default_city
+    )
+
+
+    if selected_cities:
+        df_cities = airport_traffic_by_multiple_cities(selected_cities, conn)
+        
+        if df_cities is not None and not df_cities.empty:
+            # Dynamiczny tytuł w zależności od tego, ile miast wybrano
+            if len(selected_cities) <= 3:
+                title_suffix = ", ".join(selected_cities)
+            else:
+                title_suffix = f"wybranych {len(selected_cities)} miast"
+                
             fig = px.bar(
-                df_country, x="icao_code", y="total_arrivals", hover_data=["airport_name", "city"], 
-                title=f"Ruch lotniczy w kraju: {country}"
+                df_cities, x="icao_code", y="total_arrivals", hover_data=["airport_name", "city"], 
+                title=f"Ruch lotniczy: {title_suffix}"
             )
             st.plotly_chart(fig, width='stretch')
-            st.dataframe(df_country, width='stretch')
+            st.dataframe(df_cities, width='stretch')
         else:
-            st.info("Brak danych dla tego kraju.")
+            st.info("Brak przylotów dla wybranych miast.")
+    else:
+        st.warning("Wybierz co najmniej jedno miasto z listy, aby zobaczyć dane.")
 
     st.subheader("Loty dłuższe niż wybrany czas")
     min_duration = st.slider("Minimalny czas lotu w minutach", 0, 1000, 60)
