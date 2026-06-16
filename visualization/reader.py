@@ -37,7 +37,7 @@ def airport_traffic_by_country(country_name: str, connection) -> pd.DataFrame | 
     a.city AS city,
     COUNT(arr.arrival_id) AS total_arrivals
     FROM airports a
-    LEFT JOIN arrivals arr ON a.icao_code = arr.arrival_airport
+    JOIN arrivals arr ON a.icao_code = arr.arrival_airport
     WHERE a.country = '{country_name}'
     GROUP BY a.icao_code, a.airport_name, a.city
     ORDER BY total_arrivals DESC;
@@ -57,12 +57,12 @@ def airlines_flights_above_count(min_flights: int, connection) -> pd.DataFrame |
 
     zapytanie = f"""
     SELECT
-    al.airline_code AS airline_code,
-    al.airline_name AS airline_name,
+    COALESCE(al.airline_code, 'UNK') AS airline_code,
+    COALESCE(al.airline_name, 'Nieznana linia') AS airline_name,
     COUNT(arr.arrival_id) AS flight_count
     FROM arrivals arr
     JOIN aircraft ac ON arr.icao24 = ac.icao24
-    JOIN airlines al ON ac.airline_code = al.airline_code
+    LEFT JOIN airlines al ON ac.airline_code = al.airline_code
     GROUP BY al.airline_code, al.airline_name
     HAVING COUNT(arr.arrival_id) >= {min_flights}
     ORDER BY flight_count DESC;
@@ -83,7 +83,7 @@ def daily_stats_for_airport(airport_icao: str, connection) -> pd.DataFrame | Non
     avg_flight_duration_min
     FROM daily_airport_stats
     WHERE icao_code = '{airport_icao}'
-    ORDER BY stat_date DESC;
+    ORDER BY stat_date ASC;
     """
     return pd.read_sql(zapytanie, connection)
 
@@ -136,11 +136,11 @@ def most_active_aircraft(connection, limit: int = 10) -> pd.DataFrame | None:
     zapytanie = f"""
     SELECT 
         ac.icao24 AS icao24,
-        al.airline_name AS airline_name,
+        COALESCE(al.airline_name, 'Nieznana linia') AS airline_name,
         COUNT(arr.arrival_id) AS total_flights
     FROM arrivals arr
     JOIN aircraft ac ON arr.icao24 = ac.icao24
-    JOIN airlines al ON ac.airline_code = al.airline_code
+    LEFT JOIN airlines al ON ac.airline_code = al.airline_code
     GROUP BY ac.icao24, al.airline_name
     ORDER BY total_flights DESC
     LIMIT {limit};

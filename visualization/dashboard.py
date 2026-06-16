@@ -41,7 +41,7 @@ st.sidebar.header("Ustawienia statystyk")
 period = st.sidebar.selectbox("Agregacja czasu",["dzien", "miesiac"])
 
 
-limit = st.sidebar.slider("Liczba wyników",1,100,1)
+limit = st.sidebar.slider("Liczba wyników",1,100,10)
 
 min_duration = st.sidebar.slider("Minimalny czas lotu w minutach",0,1000,60)
 
@@ -66,11 +66,12 @@ with tab1:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Liczba lotnisk", len(df_airports))
+        st.metric("Lotniska docelowe z przylotami", len(df_airports))
     with col2:
         st.metric("Łączna liczba przylotów", int(df_airports["arrival_count"].sum()))
     with col3:
-        st.metric("Największy ruch", df_airports.iloc[0]["icao_code"])
+        top_airport = df_airports.iloc[0]
+        st.metric("Największy ruch",top_airport["icao_code"],f'{int(top_airport["arrival_count"])} przylotów')
     st.subheader("Liczba przylotow w czasie")
 
     fig = px.line(
