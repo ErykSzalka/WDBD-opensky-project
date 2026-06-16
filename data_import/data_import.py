@@ -75,6 +75,63 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
             continue
         else:
             import_errors.append(f"Failed to fetch {airport_code}. Status: {response.status_code}")
+
+def fetch_opensky_radar_data():
+    url = "https://opensky-network.org/api/states/all"
+
+    params = {
+        "lamin": 49.0,
+        "lamax": 54.9,
+        "lomin": 14.1,
+        "lomax": 24.2
+    }
+
+    all_states = []
+    import_errors = []
+
+    response = requests.get(
+        url,
+        params=params,
+        headers=tokens.headers(),
+        timeout=(5, 30),
+    )
+
+    if response.status_code == 200:
+        data = response.json()
+        states = data.get("states")
+        if states:
+            for raw_state in states:
+                state_obj = RadarState.from_api_list(raw_state)
+                all_states.append(state_obj)
+        else:
+            import_errors.append("Warning: Empty radar data for Poland")
+
+    elif response.status_code == 401:
+        tokens.invalidate()
+        response = requests.get(
+            url,
+            params=params,
+            headers=tokens.headers(),
+            timeout=(5, 30),
+        )
+        if response.status_code == 200:
+            data = response.json()
+            states = data.get("states")
+            if states:
+                for raw_state in states:
+                    state_obj = RadarState.from_api_list(raw_state)
+                    all_states.append(state_obj)
+            else:
+                import_errors.append("Warning: Empty radar data for Poland after token refresh")
+        else:
+            import_errors.append(f"Failed after token refresh. Status: {response.status_code}")
+    
+    elif response.status_code == 404:
+        pass
+    else:
+        import_errors.append(f"Failed to fetch radar data. Status: {response.status_code}")
+
+    return all_states, import_errors
     
     return all_arrivals, import_errors
 
