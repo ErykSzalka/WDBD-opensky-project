@@ -75,6 +75,7 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
             continue
         else:
             import_errors.append(f"Failed to fetch {airport_code}. Status: {response.status_code}")
+    return all_arrivals, import_errors
 
 def fetch_opensky_radar_data():
     url = "https://opensky-network.org/api/states/all"
@@ -132,9 +133,6 @@ def fetch_opensky_radar_data():
         import_errors.append(f"Failed to fetch radar data. Status: {response.status_code}")
 
     return all_states, import_errors
-    
-    return all_arrivals, import_errors
-
 
 
 
