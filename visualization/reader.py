@@ -219,3 +219,39 @@ def compare_specific_airports(icao_codes: list, connection) -> pd.DataFrame | No
     ORDER BY total_flights DESC;
     """
     return pd.read_sql(zapytanie, connection)
+
+def get_all_cities(connection) -> list:
+    """
+    Pobiera wszystkie unikalne miasta z bazy, aby zasilić rozwijaną listę.
+    """
+    zapytanie = """
+    SELECT DISTINCT city 
+    FROM airports 
+    WHERE city IS NOT NULL AND country = 'Poland'
+    ORDER BY city ASC;
+    """
+    df = pd.read_sql(zapytanie, connection)
+    return df['city'].tolist()
+
+def airport_traffic_by_multiple_cities(cities: list, connection) -> pd.DataFrame | None:
+    """
+    Zwraca ruch lotniczy dla listy wybranych miast.
+    """
+    if not isinstance(cities, list) or len(cities) == 0:
+        return None
+
+    formatted_cities = ", ".join([f"'{city}'" for city in cities])
+
+    zapytanie = f"""
+    SELECT
+        a.icao_code AS icao_code,
+        a.airport_name AS airport_name,
+        a.city AS city,
+        COUNT(arr.arrival_id) AS total_arrivals
+    FROM airports a
+    LEFT JOIN arrivals arr ON a.icao_code = arr.arrival_airport
+    WHERE a.city IN ({formatted_cities})
+    GROUP BY a.icao_code, a.airport_name, a.city
+    ORDER BY total_arrivals DESC;
+    """
+    return pd.read_sql(zapytanie, connection)
