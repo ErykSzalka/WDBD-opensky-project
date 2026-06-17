@@ -78,3 +78,26 @@ CREATE TABLE IF NOT EXISTS daily_airport_stats (
     CONSTRAINT unique_daily_airport_stat
         UNIQUE (icao_code, stat_date)
 );
+CREATE TABLE IF NOT EXISTS aircraft_positions (
+    position_id SERIAL PRIMARY KEY,
+    snapshot_time TIMESTAMP NOT NULL,
+    icao24 VARCHAR(6) NOT NULL,
+    callsign VARCHAR(20),
+    origin_country VARCHAR(100),
+    time_position TIMESTAMP,
+    last_contact TIMESTAMP,
+    longitude NUMERIC(9, 6),
+    latitude NUMERIC(9, 6),
+    baro_altitude NUMERIC(10, 2),
+    geo_altitude NUMERIC(10, 2),
+    on_ground BOOLEAN,
+    velocity NUMERIC(10, 2),
+    true_track NUMERIC(10, 2),
+    vertical_rate NUMERIC(10, 2),
+    squawk VARCHAR(10),
+    spi BOOLEAN,
+    position_source INT,
+
+    CONSTRAINT unique_aircraft_position
+        UNIQUE (snapshot_time, icao24)
+);

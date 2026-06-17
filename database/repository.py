@@ -9,7 +9,72 @@ SQL_FOLDER = Path(__file__).resolve().parent.parent / "sql"
 
 def read_sql_file(file_name):
     return (SQL_FOLDER / file_name).read_text(encoding="utf-8")
+def save_aircraft_positions_to_database(states, snapshot_timestamp, errors=None):
+    database_name = os.getenv("DB_NAME")
+    errors = errors or []
+    if not states:
+        print("Brak danych radarowych do zapisania.")
+        return
+    if snapshot_timestamp is None:
+        print("Brak czasu snapshotu danych radarowych.")
+        return
+    insert_position_sql = read_sql_file("insert_aircraft_position.sql")
+    connection =connect_to_database(database_name)
+    cursor = connection.cursor()
 
+    try:
+        snapshot_time = datetime.fromtimestamp(snapshot_timestamp, tz=timezone.utc)
+        saved_count =0
+        for state in states:
+            if state.latitude is None or state.longitude is None:
+                continue
+            time_position = (
+                datetime.fromtimestamp(state.time_position, tz=timezone.utc)
+                if state.time_position is not None
+                else None
+            )
+            last_contact = (
+                datetime.fromtimestamp(state.last_contact, tz=timezone.utc)
+                if state.last_contact is not None
+                else None
+            )
+            cursor.execute(
+                insert_position_sql,
+                (
+                    snapshot_time,
+                    state.icao24,
+                    state.callsign,
+                    state.origin_country,
+                    time_position,
+                    last_contact,
+                    state.longitude,
+                    state.latitude,
+                    state.baro_altitude,
+                    state.geo_altitude,
+                    state.on_ground,
+                    state.velocity,
+                    state.true_track,
+                    state.vertical_rate,
+                    state.squawk,
+                    state.spi,
+                    state.position_source,
+                ),
+            )
+
+            saved_count+=1
+
+        connection.commit()
+        print(f"Zapisano pozycje radarowe: {saved_count}")
+
+    except Exception as error:
+        connection.rollback()
+        print("Błąd zapisu pozycji radarowych do bazy:")
+        print(error)
+        raise
+
+    finally:
+        cursor.close()
+        connection.close()
 def save_arrivals_to_database(arrivals, errors=None, requested_start=None, requested_end=None):
     if not arrivals:
         download_status = "FAILED" if errors else "EMPTY"

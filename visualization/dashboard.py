@@ -19,7 +19,9 @@ from visualization.reader import (
     arrivals_by_hour,
     compare_specific_airports,
     get_all_cities,
-    airport_traffic_by_multiple_cities
+    airport_traffic_by_multiple_cities,
+    radar_snapshot_times,
+    aircraft_positions_for_snapshot
 )
 
 load_dotenv()
@@ -41,7 +43,7 @@ st.title("Dashboard lotów OpenSky")
 # Pobieramy główną listę lotnisk raz, żeby nie męczyć bazy przy każdym kliknięciu
 df_airports = arrivals_by_airport(conn)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Przegląd ogólny", "Lotniska", "Trasy", "Linie i samoloty", "Filtrowanie"])
+tab1, tab2, tab3, tab4, tab5,tab6 = st.tabs(["Przegląd ogólny", "Lotniska", "Trasy", "Linie i samoloty", "Filtrowanie","Mapa radarowa"])
 
 with tab1:
     st.header("Przegląd ogólny")
@@ -177,7 +179,6 @@ with tab5:
         df_cities = airport_traffic_by_multiple_cities(selected_cities, conn)
         
         if df_cities is not None and not df_cities.empty:
-            # Dynamiczny tytuł w zależności od tego, ile miast wybrano
             if len(selected_cities) <= 3:
                 title_suffix = ", ".join(selected_cities)
             else:
@@ -221,3 +222,64 @@ with tab5:
                 )
                 st.plotly_chart(fig, width='stretch')
                 st.dataframe(df_compare, width='stretch')
+
+with tab6:
+    st.header("Mapa radarowa samolotów nad Polską")
+
+    df_snapshots = radar_snapshot_times(conn)
+
+    if df_snapshots is None or df_snapshots.empty:
+        st.info("Brak zapisanych danych radarowych. Uruchom radar collector i poczekaj na pierwszy zapis.")
+    else:
+        snapshot_options = df_snapshots["snapshot_time"].tolist()
+
+        selected_snapshot = st.select_slider(
+            "Wybierz moment mapy",
+            options=snapshot_options,
+            value=snapshot_options[-1]
+        )
+
+        df_positions = aircraft_positions_for_snapshot(selected_snapshot, conn)
+
+        if df_positions is None or df_positions.empty:
+            st.info("Brak pozycji samolotów dla wybranego momentu.")
+        else:
+            st.metric("Liczba samolotów na mapie", len(df_positions))
+
+            fig = px.scatter_mapbox(
+                df_positions,
+                lat="latitude",
+                lon="longitude",
+                hover_name="callsign",
+                hover_data={
+                    "icao24": True,
+                    "origin_country": True,
+                    "baro_altitude": True,
+                    "geo_altitude": True,
+                    "velocity": True,
+                    "true_track": True,
+                    "squawk": True,
+                    "latitude": False,
+                    "longitude": False,
+                },
+                color="origin_country",
+                zoom=5,
+                height=700,
+                title=f"Pozycje samolotów: {selected_snapshot}"
+            )
+            fig.update_layout(
+                mapbox_style="open-street-map",
+                mapbox_center={
+                    "lat": 52.0,
+                    "lon": 19.0
+                },
+                margin={
+                    "r": 0,
+                    "t": 40,
+                    "l": 0,
+                    "b": 0
+                }
+            )
+
+            st.plotly_chart(fig, width="stretch")
+            st.dataframe(df_positions, width="stretch")
