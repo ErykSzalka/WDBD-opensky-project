@@ -261,3 +261,44 @@ def airport_traffic_by_multiple_cities(cities: list, connection) -> pd.DataFrame
     ORDER BY total_arrivals DESC;
     """
     return pd.read_sql(zapytanie, connection)
+
+def radar_snapshot_times(connection) -> pd.DataFrame | None:
+    """
+    Zwraca dostepne czasy zapisanych snapshotow radarowych.
+    """
+    zapytanie = """
+    SELECT DISTINCT snapshot_time
+    FROM aircraft_positions
+    ORDER BY snapshot_time ASC;
+    """
+    return pd.read_sql(zapytanie, connection)
+
+
+def aircraft_positions_for_snapshot(snapshot_time, connection) -> pd.DataFrame | None:
+    """
+    Zwraca pozycje samolotow dla wybranego snapshotu radarowego.
+    """
+    zapytanie = """
+    SELECT
+        snapshot_time,
+        icao24,
+        callsign,
+        origin_country,
+        latitude::float AS latitude,
+        longitude::float AS longitude,
+        baro_altitude::float AS baro_altitude,
+        geo_altitude::float AS geo_altitude,
+        velocity::float AS velocity,
+        true_track::float AS true_track,
+        vertical_rate::float AS vertical_rate,
+        on_ground,
+        squawk,
+        spi,
+        position_source
+    FROM aircraft_positions
+    WHERE snapshot_time = %s
+      AND latitude IS NOT NULL
+      AND longitude IS NOT NULL
+    ORDER BY callsign, icao24;
+    """
+    return pd.read_sql(zapytanie, connection, params=(snapshot_time,))
