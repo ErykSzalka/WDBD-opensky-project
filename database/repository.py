@@ -32,6 +32,13 @@ def save_arrivals_to_database(arrivals, errors=None, requested_start=None, reque
         if not arrivals:
             print("Brak danych do zapisania.")
             return
+        arrivals = [a for a in arrivals if a.firstSeen is not None and a.lastSeen is not None]
+        
+
+        if not arrivals:
+            print("Brak poprawnych danych z czasami lotu po odfiltrowaniu błędów.")
+            return
+        
         data_range_start = datetime.fromtimestamp(min(a.firstSeen for a in arrivals), tz=timezone.utc)
         data_range_end = datetime.fromtimestamp(max(a.lastSeen for a in arrivals), tz=timezone.utc)
         download_status = "PARTIAL_SUCCESS" if errors else "SUCCESS"

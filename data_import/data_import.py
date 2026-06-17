@@ -18,21 +18,27 @@ from database.connection import connect_to_database
 def fetch_opensky_data() -> tuple[list[dict], list]:
     url = "https://opensky-network.org/api/flights/arrival"
 
-    end_time = int(time.time()) - (86400 * 4) # tutaj określamy ile dni wstecz chcemy
+    end_time = int(time.time()) - (86400 * 3) # tutaj określamy ile dni wstecz chcemy
     begin_time = end_time - 86400
     #obecnie przedział czasu to jeden dzień
-    connection = connect_to_database(os.getenv("DB_NAME"))
-    cursor = connection.cursor()
-    
-    try:
-        cursor.execute("SELECT icao_code FROM airports WHERE country = 'Poland'")
-        polish_airports = [row[0] for row in cursor.fetchall()]
-    except Exception as error:
-        print("Błąd pobierania lotnisk z bazy:", error)
-        polish_airports = [] 
-    finally:
-        cursor.close()
-        connection.close()
+
+    polish_airports = [
+    "EPWA",  # Warszawa (Chopin)
+    "EPKK",  # Kraków (Balice)
+    "EPGD",  # Gdańsk (Rębiechowo)
+    "EPKT",  # Katowice (Pyrzowice)
+    "EPWR",  # Wrocław (Strachowice)
+    "EPMO",  # Warszawa (Modlin)
+    "EPPO",  # Poznań (Ławica)
+    "EPRZ",  # Rzeszów (Jasionka)
+    "EPSC",  # Szczecin (Goleniów)
+    "EPBY",  # Bydgoszcz (Szwederowo)
+    "EPLL",  # Łódź (Lublinek)
+    "EPLB",  # Lublin (Świdnik)
+    "EPSY",  # Olsztyn (Mazury)
+    "EPZG",  # Zielona Góra (Babimost)
+    "EPRA"   # Radom (Sadków)
+]
     
     all_arrivals = []
     import_errors = []
@@ -60,7 +66,7 @@ def fetch_opensky_data() -> tuple[list[dict], list]:
                     all_arrivals.append(arrival_obj)
             else:
                 import_errors.append(f"Warning: Empty data for {airport_code}")
-            time.sleep(2)
+            time.sleep(1)
         elif response.status_code == 401:
             tokens.invalidate()
             response = requests.get(

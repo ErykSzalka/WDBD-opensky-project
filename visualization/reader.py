@@ -222,12 +222,18 @@ def compare_specific_airports(icao_codes: list, connection) -> pd.DataFrame | No
 
 def get_all_cities(connection) -> list:
     """
-    Pobiera wszystkie unikalne miasta z bazy, aby zasilić rozwijaną listę.
+    Pobiera unikalne miasta z bazy, ale TYLKO dla 15 głównych, 
+    monitorowanych polskich lotnisk, aby nie zaśmiecać listy.
     """
     zapytanie = """
     SELECT DISTINCT city 
     FROM airports 
-    WHERE city IS NOT NULL AND country = 'Poland'
+    WHERE icao_code IN (
+        'EPWA', 'EPKK', 'EPGD', 'EPKT', 'EPWR', 
+        'EPMO', 'EPPO', 'EPRZ', 'EPSC', 'EPBY', 
+        'EPLL', 'EPLB', 'EPSY', 'EPZG', 'EPRA'
+    )
+    AND city IS NOT NULL 
     ORDER BY city ASC;
     """
     df = pd.read_sql(zapytanie, connection)
