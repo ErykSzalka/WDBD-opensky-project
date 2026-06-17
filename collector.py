@@ -23,7 +23,7 @@ def run_collector():
         print("Czekam na kolejne pobranie...")
         time.sleep(INTERVAL_SECONDS)
 
-RADAR_INTERVAL_SECONDS = 10*60
+RADAR_INTERVAL_SECONDS = 2*60
 
 def run_radar_collector():
     while True:
