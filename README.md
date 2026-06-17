@@ -1,16 +1,34 @@
 # WDBD OpenSky Project
 
-A Python project for collecting, storing, and visualizing flight arrival data from the OpenSky Network API.
+Python application for collecting, storing, and visualizing aviation data from the OpenSky Network API.
 
-The application downloads airport arrival data, stores it in a PostgreSQL database, calculates daily airport statistics, and displays the results in an interactive Streamlit dashboard.
+The project imports historical airport arrival data, stores it in PostgreSQL, calculates daily airport statistics, and displays the results in a Streamlit dashboard. It also collects live aircraft position snapshots over Poland so they can be displayed later on a time-based radar map.
+
+## Screenshots
+
+Add screenshots to the repository and update the paths below.
+
+### Dashboard Overview
+
+![Dashboard overview](docs/images/dashboard-overview.png)
+
+### Airport Statistics
+
+![Airport statistics](docs/images/airport-statistics.png)
+
+### Radar Map
+
+![Radar map](docs/images/radar-map.png)
 
 ## Features
 
-- Fetches arrival data from the OpenSky Network API
-- Stores flights, aircraft, airports, airlines, and import logs in PostgreSQL
-- Imports airport and airline dictionary data from external CSV sources
+- Fetches historical arrival data from the OpenSky Network API
+- Fetches live aircraft state vectors over Poland
+- Stores arrivals, aircraft, airports, airlines, import logs, and aircraft positions in PostgreSQL
+- Imports airport and airline dictionaries from external public data sources
 - Calculates daily airport statistics
-- Provides an interactive Streamlit dashboard with:
+- Runs separate collectors for arrivals and radar positions
+- Provides a Streamlit dashboard with:
   - general arrival overview
   - arrivals over time
   - arrivals by hour
@@ -19,7 +37,8 @@ The application downloads airport arrival data, stores it in a PostgreSQL databa
   - most popular routes
   - most active aircraft
   - airline activity
-  - filtering by flight duration and country
+  - filtering by city, flight duration, and selected airports
+  - radar map based on saved aircraft position snapshots
 
 ## Tech Stack
 
@@ -36,50 +55,64 @@ The application downloads airport arrival data, stores it in a PostgreSQL databa
 
 ```text
 WDBD-opensky-project/
-├── collector.py
-├── main.py
-├── requirements.txt
-├── README.md
-├── database/
-│   ├── connection.py
-│   ├── setup.py
-│   ├── repository.py
-│   ├── airport_importer.py
-│   ├── airline_importer.py
-│   └── __init__.py
-├── data_import/
-│   ├── data_import.py
-│   ├── data_organizer.py
-│   ├── token_manager.py
-│   └── __init__.py
-├── sql/
-│   ├── create_tables.sql
-│   ├── insert_airport.sql
-│   ├── insert_airline.sql
-│   ├── insert_aircraft.sql
-│   ├── insert_arrival.sql
-│   ├── insert_import_log.sql
-│   └── update_daily_airport_stats.sql
-└── visualization/
-    ├── dashboard.py
-    ├── reader.py
-    └── wizualizacja.ipynb
+|-- arrival_collector.py
+|-- collector.py
+|-- main.py
+|-- radar_collector.py
+|-- requirements.txt
+|-- README.md
+|-- database/
+|   |-- connection.py
+|   |-- setup.py
+|   |-- repository.py
+|   |-- airport_importer.py
+|   |-- airline_importer.py
+|   `-- __init__.py
+|-- data_import/
+|   |-- data_import.py
+|   |-- data_organizer.py
+|   |-- token_manager.py
+|   `-- __init__.py
+|-- sql/
+|   |-- create_tables.sql
+|   |-- insert_aircraft.sql
+|   |-- insert_aircraft_position.sql
+|   |-- insert_airport.sql
+|   |-- insert_airline.sql
+|   |-- insert_arrival.sql
+|   |-- insert_import_log.sql
+|   `-- update_daily_airport_stats.sql
+`-- visualization/
+    |-- dashboard.py
+    |-- reader.py
+    `-- wizualizacja.ipynb
 ```
 
 ## How It Works
 
-The project consists of four main parts:
+The project has five main parts:
 
 1. Database setup
-2. Data import
-3. Data storage and aggregation
-4. Data visualization
+2. Dictionary imports
+3. Historical arrival collection
+4. Live radar position collection
+5. Dashboard visualization
 
 ### 1. Database Setup
 
-The database is created and initialized using files from the `database/` and `sql/` directories.
+The database is created and initialized by:
 
-The main database tables are:
+```text
+database/setup.py
+```
+
+The SQL schema is stored in:
+
+```text
+sql/create_tables.sql
+```
+
+The main tables are:
 
 - `airports`
 - `airlines`
@@ -87,70 +120,137 @@ The main database tables are:
 - `arrivals`
 - `import_logs`
 - `daily_airport_stats`
+- `aircraft_positions`
 
-The table structure is defined in:
+### 2. Dictionary Imports
 
-```text
-sql/create_tables.sql
-```
+Airport and airline dictionaries are imported before collectors start.
 
-### 2. Data Import
-
-Flight arrival data is fetched from the OpenSky Network API in:
+Airport data is imported by:
 
 ```text
-data_import/data_import.py
+database/airport_importer.py
 ```
 
-The current implementation downloads arrival data for selected Polish airports:
+Airline data is imported by:
 
-```python
-polish_airports = ["EPWA", "EPKK", "EPGD", "EPKT", "EPWR"]
+```text
+database/airline_importer.py
 ```
 
-These airports represent:
+The project uses these dictionary sources:
 
-- EPWA - Warsaw Chopin Airport
-- EPKK - Krakow John Paul II International Airport
-- EPGD - Gdansk Lech Walesa Airport
-- EPKT - Katowice Airport
-- EPWR - Wroclaw Airport
+```env
+AIRPORTS_URL=https://davidmegginson.github.io/ourairports-data/airports.csv
+COUNTRIES_URL=https://davidmegginson.github.io/ourairports-data/countries.csv
+AIRLINES_URL=https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat
+```
 
-The OpenSky API endpoint used by the project is:
+### 3. Historical Arrival Collection
+
+Historical arrival data is fetched from:
 
 ```text
 https://opensky-network.org/api/flights/arrival
 ```
 
-The downloaded data is converted into `Arrival` objects defined in:
+The current implementation downloads data for selected Polish airports, for example:
 
-```text
-data_import/data_organizer.py
+```python
+polish_airports = [
+    "EPWA",
+    "EPKK",
+    "EPGD",
+    "EPKT",
+    "EPWR",
+    "EPMO",
+    "EPPO",
+    "EPRZ",
+    "EPSC",
+    "EPBY",
+    "EPLL",
+    "EPLB",
+    "EPSY",
+    "EPZG",
+    "EPRA",
+]
 ```
 
-### 3. Data Storage
-
-Downloaded arrivals are saved into PostgreSQL by:
+The collector is started through:
 
 ```text
-database/repository.py
+arrival_collector.py
 ```
 
-The project also stores:
-
-- import execution logs
-- aircraft data
-- airline assignments based on callsign prefixes
-- airport data
-- daily airport statistics
-
-After inserting arrivals, the project updates the `daily_airport_stats` table using:
+The collection loop is defined in:
 
 ```text
-sql/update_daily_airport_stats.sql
+collector.py
 ```
 
-### 4. Dashboard
+By default, arrival data is collected once every 24 hours:
+
+```python
+INTERVAL_SECONDS = 24 * 60 * 60
+```
+
+### 4. Live Radar Position Collection
+
+Live aircraft positions are fetched from:
+
+```text
+https://opensky-network.org/api/states/all
+```
+
+The request uses a bounding box covering Poland:
+
+```python
+params = {
+    "lamin": 49.0,
+    "lamax": 54.9,
+    "lomin": 14.1,
+    "lomax": 24.2,
+}
+```
+
+The radar collector stores aircraft position snapshots in:
+
+```text
+aircraft_positions
+```
+
+The collector is started through:
+
+```text
+radar_collector.py
+```
+
+By default, radar data is collected every 10 minutes:
+
+```python
+RADAR_INTERVAL_SECONDS = 10 * 60
+```
+
+Each saved position contains fields such as:
+
+- `snapshot_time`
+- `icao24`
+- `callsign`
+- `origin_country`
+- `latitude`
+- `longitude`
+- `baro_altitude`
+- `geo_altitude`
+- `velocity`
+- `true_track`
+- `vertical_rate`
+- `squawk`
+- `spi`
+- `position_source`
+
+The `snapshot_time` field is used later by the dashboard to display aircraft positions for a selected moment in time.
+
+### 5. Dashboard Visualization
 
 The dashboard is implemented in:
 
@@ -158,33 +258,32 @@ The dashboard is implemented in:
 visualization/dashboard.py
 ```
 
-It uses helper queries from:
+Database read queries are implemented in:
 
 ```text
 visualization/reader.py
 ```
 
-The dashboard allows the user to explore:
+The dashboard contains sections for:
 
-- total arrivals by airport
-- arrivals over time
-- hourly arrival distribution
-- most popular routes
-- most active aircraft
-- airline activity
-- flight duration filters
-- traffic by country
-- airport comparisons
+- general overview
+- airports
+- routes
+- airlines and aircraft
+- filtering
+- radar map
+
+The radar map uses saved snapshots from `aircraft_positions`. The user can select a snapshot time and display aircraft positions on a map of Poland.
 
 ## Requirements
 
-Install dependencies using:
+Install dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-The main dependencies are:
+Dependencies:
 
 ```text
 pandas
@@ -211,26 +310,16 @@ DB_PASSWORD=your_password
 OPENSKY_CLIENT_ID=your_client_id
 OPENSKY_CLIENT_SECRET=your_client_secret
 
-AIRPORTS_URL=https://example.com/airports.csv
-COUNTRIES_URL=https://example.com/countries.csv
-AIRLINES_URL=https://example.com/airlines.dat
+AIRPORTS_URL=https://davidmegginson.github.io/ourairports-data/airports.csv
+COUNTRIES_URL=https://davidmegginson.github.io/ourairports-data/countries.csv
+AIRLINES_URL=https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat
 ```
 
-The database connection is configured in:
-
-```text
-database/connection.py
-```
-
-The API token logic is handled in:
-
-```text
-data_import/token_manager.py
-```
+Do not commit real `.env` files to Git. The file may contain database credentials and OpenSky API credentials.
 
 ## Running the Project
 
-To run the full application:
+Run the full application:
 
 ```bash
 python main.py
@@ -238,38 +327,39 @@ python main.py
 
 This will:
 
-1. create the database if it does not exist,
+1. create the database if needed,
 2. create required tables,
 3. import airport dictionary data,
 4. import airline dictionary data,
 5. start the Streamlit dashboard,
-6. start the collector loop.
+6. start the arrival collector process,
+7. start the radar collector process.
 
-The collector downloads data periodically. The interval is configured in:
+## Running Individual Parts
 
-```text
-collector.py
-```
-
-Default interval:
-
-```python
-INTERVAL_SECONDS = 24 * 60 * 60
-```
-
-This means the collector runs once every 24 hours.
-
-## Running Only the Dashboard
-
-If the database already contains data, the dashboard can be started directly with:
+Run only the dashboard:
 
 ```bash
 streamlit run visualization/dashboard.py
 ```
 
-## OpenSky API Time Range
+Run only the arrival collector:
 
-The project uses the OpenSky arrivals endpoint:
+```bash
+python arrival_collector.py
+```
+
+Run only the radar collector:
+
+```bash
+python radar_collector.py
+```
+
+## OpenSky API Notes
+
+### Arrival Endpoint
+
+The project uses:
 
 ```text
 /flights/arrival
@@ -277,20 +367,39 @@ The project uses the OpenSky arrivals endpoint:
 
 This endpoint has a time range limitation. A single request cannot cover a time interval larger than two days.
 
-For this reason, the current implementation downloads data for a one-day period:
+The current implementation uses a one-day range:
 
 ```python
-end_time = int(time.time()) - (86400 * 5)
+end_time = int(time.time()) - (86400 * 6)
 begin_time = end_time - 86400
 ```
 
-This means:
+If more days are needed, the data should be fetched in smaller chunks, for example one request per day.
 
-- `end_time` is set to 5 days before the current time,
-- `begin_time` is set to 1 day before `end_time`,
-- the request covers a 24-hour period.
+### State Vectors Endpoint
 
-If more days are needed, the data should be downloaded in smaller chunks, for example one request per day.
+The project also uses:
+
+```text
+/states/all
+```
+
+This endpoint returns current aircraft state vectors. The project filters them by a bounding box around Poland and stores them as position snapshots.
+
+### Rate Limits
+
+OpenSky may return:
+
+```text
+429 Too Many Requests
+```
+
+This means too many requests were sent in a short period of time. To avoid this:
+
+- keep the airport list limited to relevant airports,
+- add delays between airport requests,
+- keep radar polling at a reasonable interval, such as 10 minutes,
+- avoid running multiple collectors at the same time.
 
 ## Database Tables
 
@@ -326,7 +435,7 @@ Main columns:
 
 ### arrivals
 
-Stores imported flight arrival records.
+Stores imported historical arrival records.
 
 Main columns:
 
@@ -342,7 +451,7 @@ Main columns:
 
 ### import_logs
 
-Stores information about each import execution.
+Stores information about arrival import executions.
 
 Main columns:
 
@@ -354,7 +463,7 @@ Main columns:
 
 ### daily_airport_stats
 
-Stores aggregated daily statistics per airport.
+Stores aggregated daily statistics per destination airport.
 
 Main columns:
 
@@ -364,11 +473,44 @@ Main columns:
 - `arrival_count`
 - `avg_flight_duration_min`
 
+### aircraft_positions
+
+Stores live aircraft position snapshots collected from `/states/all`.
+
+Main columns:
+
+- `position_id`
+- `snapshot_time`
+- `icao24`
+- `callsign`
+- `origin_country`
+- `time_position`
+- `last_contact`
+- `longitude`
+- `latitude`
+- `baro_altitude`
+- `geo_altitude`
+- `on_ground`
+- `velocity`
+- `true_track`
+- `vertical_rate`
+- `squawk`
+- `spi`
+- `position_source`
+
+The table has a uniqueness constraint on:
+
+```text
+snapshot_time, icao24
+```
+
+This prevents duplicate positions for the same aircraft in the same snapshot.
+
 ## Dashboard Sections
 
 ### General Overview
 
-Shows basic information about imported arrivals, including:
+Shows:
 
 - number of destination airports with arrivals
 - total number of arrivals
@@ -380,7 +522,7 @@ Shows basic information about imported arrivals, including:
 
 Shows:
 
-- number of arrivals by airport
+- arrivals by airport
 - average flight duration by airport
 - daily statistics for a selected airport
 
@@ -399,27 +541,26 @@ Shows:
 
 Allows filtering by:
 
+- selected Polish cities
 - minimum flight duration
-- airport country
 - selected airports for comparison
 
-## Notes
+### Radar Map
 
-This project analyzes imported arrival records, not global real-time air traffic.
+Shows aircraft positions over Poland for a selected saved snapshot.
 
-The statistics shown in the dashboard depend on:
+The planned workflow is:
 
-- selected airports in the import script,
-- selected time range,
-- OpenSky API availability,
-- completeness of OpenSky data,
-- imported airport and airline dictionaries.
+1. The radar collector saves aircraft positions every 10 minutes.
+2. The dashboard loads available `snapshot_time` values.
+3. The user selects a snapshot time.
+4. The dashboard displays aircraft points on a map.
 
 ## Common Issues
 
 ### psycopg2 DLL Error on Windows
 
-If you see an error similar to:
+If you see:
 
 ```text
 ImportError: DLL load failed while importing _psycopg
@@ -445,12 +586,49 @@ OpenSky may return an empty response if:
 - the selected time range has no data,
 - the requested period is too recent,
 - the API limit was reached,
-- the airport had no arrivals in the selected period.
+- the airport had no arrivals in the selected period,
+- no aircraft are currently visible in the selected radar bounding box.
 
-### Time Range Too Large
+### Too Many Requests
 
-The OpenSky arrivals endpoint does not allow large time intervals in one request. Use daily chunks when downloading data for multiple days.
+If OpenSky returns:
+
+```text
+429 Too Many Requests
+```
+
+reduce request frequency or decrease the number of airports queried by the arrival collector.
+
+### Missing Radar Map Points
+
+If the radar map is empty, check whether `aircraft_positions` contains rows with non-null:
+
+```text
+latitude
+longitude
+```
+
+Rows without coordinates cannot be displayed on the map.
+
+## Notes
+
+This project analyzes imported OpenSky data, not complete global real-time air traffic.
+
+Arrival statistics depend on:
+
+- selected airports,
+- selected time range,
+- OpenSky API availability,
+- imported dictionary data,
+- completeness of OpenSky records.
+
+Radar map data depends on:
+
+- radar collector uptime,
+- OpenSky `/states/all` availability,
+- aircraft visibility in the Poland bounding box,
+- API rate limits.
 
 ## Authors
 
-Project created for a database and data visualization assignment using OpenSky Network flight data.
+Project created for a database and data visualization assignment using OpenSky Network aviation data.
