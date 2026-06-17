@@ -4,21 +4,6 @@ Python application for collecting, storing, and visualizing aviation data from t
 
 The project imports historical airport arrival data, stores it in PostgreSQL, calculates daily airport statistics, and displays the results in a Streamlit dashboard. It also collects live aircraft position snapshots over Poland so they can be displayed later on a time-based radar map.
 
-## Screenshots
-
-Add screenshots to the repository and update the paths below.
-
-### Dashboard Overview
-
-![Dashboard overview](docs/images/dashboard-overview.png)
-
-### Airport Statistics
-
-![Airport statistics](docs/images/airport-statistics.png)
-
-### Radar Map
-
-![Radar map](docs/images/radar-map.png)
 
 ## Features
 
